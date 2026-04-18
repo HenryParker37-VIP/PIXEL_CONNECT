@@ -45,7 +45,7 @@ async function register({ username, email, password }) {
     email,
     passwordHash,
     backupHash,
-    coins: 100,
+    coins: 1000,
     inventory: [],
     equipped: { hair: 'hair_brown', shirt: 'shirt_blue', pants: 'pants_gray' },
     avatar: { skin: '#f2c99b', hairColor: '#3b2a20' },

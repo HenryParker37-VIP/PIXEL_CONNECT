@@ -21,7 +21,7 @@ const ITEM_POOL = [
   { id: 'hat_straw', name: 'Straw Hat',    slot: 'hat', color: '#d4a96a' },
   { id: 'hat_wizard', name: 'Wizard Hat',  slot: 'hat', color: '#3b2a6a' },
 ];
-const ITEM_PRICE = 50;
+const ITEM_PRICE = 10;
 
 function getWeekKey() {
   const now = new Date();

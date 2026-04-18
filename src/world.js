@@ -1,40 +1,68 @@
 const WORLD = {
-  width: 1600,
-  height: 1200,
+  width: 3200,
+  height: 2400,
   tileSize: 32,
 };
 
-const HOUSES = [
-  { x: 200, y: 200, w: 160, h: 120, ownerSlot: 0 },
-  { x: 500, y: 200, w: 160, h: 120, ownerSlot: 1 },
-  { x: 800, y: 200, w: 160, h: 120, ownerSlot: 2 },
-  { x: 1100, y: 200, w: 160, h: 120, ownerSlot: 3 },
-  { x: 200, y: 800, w: 160, h: 120, ownerSlot: 4 },
-  { x: 500, y: 800, w: 160, h: 120, ownerSlot: 5 },
-  { x: 800, y: 800, w: 160, h: 120, ownerSlot: 6 },
-  { x: 1100, y: 800, w: 160, h: 120, ownerSlot: 7 },
-];
+const HOUSES = [];
+let houseCount = 0;
+
+// Create 13 clusters of 4 (52 total), but stop at 50 plots.
+// We'll arrange clusters in a 4 columns by 4 rows grid
+const startX = 200;
+const startY = 200;
+const clusterSpacingX = 500; // Road width is 500 - (160*2 + 20) = 160
+const clusterSpacingY = 440; // Road width is 440 - (120*2 + 20) = 180
+
+for (let r = 0; r < 4; r++) {
+  for (let c = 0; c < 4; c++) {
+    if (houseCount >= 50) break;
+    
+    // Cluster base position
+    const cx = startX + c * clusterSpacingX;
+    const cy = startY + r * clusterSpacingY;
+    
+    // 2x2 houses in this cluster
+    for (let i = 0; i < 2; i++) {
+      for (let j = 0; j < 2; j++) {
+        if (houseCount >= 50) break;
+        HOUSES.push({
+          x: cx + j * 180, // 160 w + 20 px inner gap
+          y: cy + i * 140, // 120 h + 20 px inner gap
+          w: 160,
+          h: 120,
+          ownerSlot: houseCount
+        });
+        houseCount++;
+      }
+    }
+  }
+}
 
 const LANDMARKS = [
-  { type: 'shop', x: 760, y: 520, w: 96, h: 96, label: 'SHOP' },
-  { type: 'board', x: 400, y: 560, w: 64, h: 48, label: 'Community Board' },
-  { type: 'board', x: 1140, y: 560, w: 64, h: 48, label: 'Events Board' },
+  { type: 'shop', x: 1550, y: 2000, w: 96, h: 96, label: 'SHOP' },
+  { type: 'board', x: 1400, y: 2040, w: 64, h: 48, label: 'Community Board' },
+  { type: 'board', x: 1700, y: 2040, w: 64, h: 48, label: 'Events Board' },
 ];
 
-function spawnPoint() {
+function spawnPoint(houseSlot) {
+  if (houseSlot !== undefined && houseSlot !== null && HOUSES[houseSlot]) {
+    const h = HOUSES[houseSlot];
+    return {
+      x: h.x + h.w / 2,
+      y: h.y + h.h + 20
+    };
+  }
+  const shop = LANDMARKS.find(l => l.type === 'shop');
   return {
-    x: 800 + (Math.random() * 80 - 40),
-    y: 600 + (Math.random() * 80 - 40),
+    x: shop.x + shop.w / 2 + (Math.random() * 40 - 20),
+    y: shop.y + shop.h + 20,
   };
 }
 
-function assignHouse(username, assignments) {
-  if (assignments[username] !== undefined) return assignments[username];
-  const taken = new Set(Object.values(assignments));
-  for (let i = 0; i < HOUSES.length; i++) {
-    if (!taken.has(i)) { assignments[username] = i; return i; }
-  }
-  return null;
+function assignHouse() {
+  // Deprecated format. Actual assignment is done on purchase.
+  return null; 
 }
 
 module.exports = { WORLD, HOUSES, LANDMARKS, spawnPoint, assignHouse };

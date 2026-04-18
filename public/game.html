@@ -13,6 +13,7 @@
     <div class="hud-brand">PixelConnect</div>
     <div class="hud-user"><span id="huName"></span></div>
     <div class="hud-coins">🪙 <span id="huCoins">0</span> xu</div>
+    <div class="hud-stats">Visitors: <b id="statVisits">0</b> | Online: <b id="statOnline">0</b></div>
   </div>
 
   <div class="hud top-right">
@@ -44,7 +45,7 @@
     <div class="modal-body">
       <div class="modal-head">
         <h2>Weekly Shop</h2>
-        <span class="sub">All items <b>50 xu</b> · Resets next week</span>
+        <span class="sub">All items <b>10 xu</b> · Resets next week</span>
         <button class="x" data-close="shopModal">×</button>
       </div>
       <div id="shopGrid" class="shop-grid"></div>
@@ -81,6 +82,45 @@
         <button class="x" data-close="invModal">×</button>
       </div>
       <div id="invGrid" class="shop-grid"></div>
+    </div>
+  </div>
+
+  <!-- Buy Land modal -->
+  <div class="modal hidden" id="buyModal">
+    <div class="modal-body">
+      <div class="modal-head">
+        <h2>Buy Plot</h2>
+        <button class="x" data-close="buyModal">×</button>
+      </div>
+      <p style="text-align:center;padding:20px;color:#333;">Purchase this plot of land for <b>500 Xu</b>?</p>
+      <div style="text-align:center;padding-bottom:20px;">
+        <button class="btn primary" id="btnBuyOkay">Buy Plot</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- House Settings modal -->
+  <div class="modal hidden" id="houseSettingsModal">
+    <div class="modal-body">
+      <div class="modal-head">
+        <h2>House Settings</h2>
+        <button class="x" data-close="houseSettingsModal">×</button>
+      </div>
+      <form id="houseForm" class="post-form">
+        <div>
+          <label style="display:block;margin-bottom:5px;font-weight:bold;">Welcome Bio</label>
+          <textarea id="houseBio" maxlength="100" placeholder="Welcome message for visitors"></textarea>
+        </div>
+        <div style="margin-top:10px;">
+          <label style="display:block;margin-bottom:5px;font-weight:bold;">House Keys (Allowed Usernames)</label>
+          <input id="houseKeys" type="text" placeholder="player1, player2" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px;">
+          <p style="font-size:12px;color:#666;margin-top:4px;">Comma separated. Leave blank to allow no one else.</p>
+        </div>
+        <div class="row" style="margin-top:15px;justify-content:space-between">
+          <button type="button" class="btn" id="btnEnterHouse">Enter House</button>
+          <button type="submit" class="btn primary">Save Settings</button>
+        </div>
+      </form>
     </div>
   </div>
 

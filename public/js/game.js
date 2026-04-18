@@ -64,6 +64,9 @@
       const t = Date.now() + 4000;
       state.bubbles.set(msg.from, t);
       state.bubbles.set(msg.to, t);
+    } else if (msg.type === 'stats') {
+      document.getElementById('statVisits').textContent = msg.visitors;
+      document.getElementById('statOnline').textContent = msg.online;
     } else if (msg.type === 'chatError') {
       UI.toast(msg.error, 'danger');
     } else if (msg.type === 'pong') {
@@ -108,31 +111,36 @@
     if (state.keys.has('a') || state.keys.has('arrowleft')) dx -= 1;
     if (state.keys.has('d') || state.keys.has('arrowright')) dx += 1;
 
-    const moving = dx || dy;
+      const moving = dx || dy;
     if (moving) {
       const len = Math.sqrt(dx * dx + dy * dy);
       dx /= len; dy /= len;
       let nx = state.me.x + dx * speed * dt;
       let ny = state.me.y + dy * speed * dt;
-      // Collision with houses (bottom half only)
-      for (const h of state.world.houses) {
-        if (nx > h.x && nx < h.x + h.w && ny > h.y + 30 && ny < h.y + h.h) {
-          // Push out horizontally
-          if (Math.abs(nx - h.x) < Math.abs(nx - (h.x + h.w))) nx = h.x - 1;
-          else nx = h.x + h.w + 1;
+
+      if (state.me.scene !== 'main') {
+        nx = Math.max(50, Math.min(350, nx));
+        ny = Math.max(50, Math.min(350, ny));
+      } else {
+        // Collision with houses (bottom half only)
+        for (const h of state.world.houses) {
+          if (nx > h.x && nx < h.x + h.w && ny > h.y + 30 && ny < h.y + h.h) {
+            if (Math.abs(nx - h.x) < Math.abs(nx - (h.x + h.w))) nx = h.x - 1;
+            else nx = h.x + h.w + 1;
+          }
         }
-      }
-      // Shop collision
-      for (const l of state.world.landmarks) {
-        if (l.type !== 'shop') continue;
-        if (nx > l.x && nx < l.x + l.w && ny > l.y && ny < l.y + l.h) {
-          if (Math.abs(nx - l.x) < Math.abs(nx - (l.x + l.w))) nx = l.x - 1;
-          else nx = l.x + l.w + 1;
+        // Shop collision
+        for (const l of state.world.landmarks) {
+          if (l.type !== 'shop') continue;
+          if (nx > l.x && nx < l.x + l.w && ny > l.y && ny < l.y + l.h) {
+            if (Math.abs(nx - l.x) < Math.abs(nx - (l.x + l.w))) nx = l.x - 1;
+            else nx = l.x + l.w + 1;
+          }
         }
+        // World bounds
+        nx = Math.max(16, Math.min(state.world.world.width - 16, nx));
+        ny = Math.max(16, Math.min(state.world.world.height - 16, ny));
       }
-      // World bounds
-      nx = Math.max(16, Math.min(state.world.world.width - 16, nx));
-      ny = Math.max(16, Math.min(state.world.world.height - 16, ny));
       state.me.x = nx; state.me.y = ny;
 
       if (Math.abs(dx) > Math.abs(dy)) state.me.dir = dx > 0 ? 'right' : 'left';
@@ -160,8 +168,13 @@
     }
 
     // Camera follow
-    state.camera.x = Math.max(0, Math.min(state.world.world.width - state.camera.w, state.me.x - state.camera.w / 2));
-    state.camera.y = Math.max(0, Math.min(state.world.world.height - state.camera.h, state.me.y - state.camera.h / 2));
+    if (state.me.scene !== 'main') {
+      state.camera.x = 200 - state.camera.w / 2;
+      state.camera.y = 200 - state.camera.h / 2;
+    } else {
+      state.camera.x = Math.max(0, Math.min(state.world.world.width - state.camera.w, state.me.x - state.camera.w / 2));
+      state.camera.y = Math.max(0, Math.min(state.world.world.height - state.camera.h, state.me.y - state.camera.h / 2));
+    }
 
     // Determine interactable target
     state.interactTarget = findInteractTarget();
@@ -187,6 +200,22 @@
     }
     if (nearest) return { kind: 'player', data: nearest, label: `chat with ${nearest.username}` };
 
+    if (state.me.scene !== 'main') {
+      if (state.me.y > 330) return { kind: 'door_exit', label: 'exit House' };
+      return null;
+    }
+
+    for (const h of state.world.houses) {
+      if (Math.abs(state.me.x - (h.x + h.w / 2)) < 80 && Math.abs(state.me.y - (h.y + h.h)) < 80) {
+        const owner = state.world.houseOwners[h.ownerSlot];
+        if (owner) {
+           return { kind: 'house_door', data: h, label: owner.username === state.me.username ? 'manage House' : `knock on ${owner.houseName}` };
+        } else {
+           return { kind: 'plot', data: h, label: 'inspect FOR SALE' };
+        }
+      }
+    }
+
     for (const l of state.world.landmarks) {
       if (l.type === 'shop') {
         if (Math.abs(state.me.x - (l.x + l.w / 2)) < 100 && Math.abs(state.me.y - (l.y + l.h)) < 100) {
@@ -207,6 +236,17 @@
     if (t.kind === 'player') openChat(t.data.username);
     else if (t.kind === 'shop') openShop();
     else if (t.kind === 'board') openFeed(t.data.label);
+    else if (t.kind === 'plot') openBuyLand(t.data);
+    else if (t.kind === 'door_exit') {
+      const slot = parseInt(state.me.scene.split('_')[1], 10);
+      const h = state.world.houses[slot];
+      ws.send(JSON.stringify({ type: 'scene_change', scene: 'main', x: h.x + h.w/2, y: h.y + h.h + 20 }));
+    }
+    else if (t.kind === 'house_door') {
+      const owner = state.world.houseOwners[t.data.ownerSlot];
+      if (owner.username === state.me.username) openHouseSettings(t.data.ownerSlot, owner);
+      else tryEnterHouse(t.data.ownerSlot, owner);
+    }
   }
 
   // ------- Render -------
@@ -221,14 +261,41 @@
       ctx.fillText('Loading world...', canvas.width / 2, canvas.height / 2);
       return;
     }
+
+    if (state.me.scene !== 'main') {
+      ctx.fillStyle = '#4a2f1d';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#392211';
+      ctx.fillRect(50 - state.camera.x, 50 - state.camera.y, 300, 340);
+      // Exit door
+      ctx.fillStyle = '#000';
+      ctx.fillRect(170 - state.camera.x, 370 - state.camera.y, 60, 20);
+      
+      const drawables = [];
+      for (const p of state.players.values()) drawables.push({ y: p.y, draw: () => drawPlayer(p, false) });
+      drawables.push({ y: state.me.y, draw: () => drawPlayer(state.me, true) });
+      drawables.sort((a, b) => a.y - b.y).forEach(d => d.draw());
+      return;
+    }
+
     Sprites.drawGrassTiles(ctx, state.camera, state.world.world);
 
     // World objects sorted by y for correct z-order
     const drawables = [];
     for (const h of state.world.houses) {
-      drawables.push({ y: h.y + h.h, draw: () => Sprites.drawHouse(ctx, {
-        x: h.x - state.camera.x, y: h.y - state.camera.y, w: h.w, h: h.h
-      }, state.world.houseOwners[h.ownerSlot]) });
+      drawables.push({ y: h.y + h.h, draw: () => {
+        if (state.world.houseOwners[h.ownerSlot]) {
+          Sprites.drawHouse(ctx, { x: h.x - state.camera.x, y: h.y - state.camera.y, w: h.w, h: h.h }, state.world.houseOwners[h.ownerSlot]);
+        } else {
+          // For Sale Sign
+          const sx = h.x - state.camera.x, sy = h.y - state.camera.y;
+          ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fillRect(sx, sy, h.w, h.h);
+          ctx.fillStyle = '#8B4513'; ctx.fillRect(sx + h.w/2 - 2, sy + h.h/2, 4, 30);
+          ctx.fillStyle = '#fff'; ctx.fillRect(sx + h.w/2 - 20, sy + h.h/2 - 15, 40, 20);
+          ctx.fillStyle = '#f00'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('SALE', sx + h.w/2, sy + h.h/2 - 1);
+        }
+      }});
     }
     for (const l of state.world.landmarks) {
       drawables.push({ y: l.y + l.h, draw: () => {
@@ -479,6 +546,49 @@
     localStorage.clear();
     window.location.href = '/';
   });
+
+  // ------- New Modals -------
+  let buyTarget = null;
+  window.openBuyLand = function(plot) { buyTarget = plot; UI.show('buyModal'); };
+  document.getElementById('btnBuyOkay').addEventListener('click', async () => {
+    if (!buyTarget) return;
+    try {
+      const r = await Net.api('/api/land/buy', { method: 'POST', body: JSON.stringify({ slot: buyTarget.ownerSlot }) });
+      document.getElementById('huCoins').textContent = r.coins;
+      UI.hide('buyModal');
+      state.world = await Net.api('/api/world');
+      UI.toast('Land purchased!', 'success');
+    } catch(e) { UI.toast(e.message, 'danger'); }
+  });
+
+  let houseSettingsTarget = null;
+  window.openHouseSettings = function(slot, owner) {
+     houseSettingsTarget = slot;
+     document.getElementById('houseBio').value = owner.bio || '';
+     UI.show('houseSettingsModal');
+  };
+  document.getElementById('houseForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const bio = document.getElementById('houseBio').value;
+    const keys = document.getElementById('houseKeys').value;
+    try {
+      await Net.api('/api/house/settings', { method: 'POST', body: JSON.stringify({ bio, keys }) });
+      UI.hide('houseSettingsModal');
+      state.world = await Net.api('/api/world');
+      UI.toast('House updated', 'success');
+    } catch(e) { UI.toast(e.message, 'danger'); }
+  });
+  document.getElementById('btnEnterHouse').addEventListener('click', () => {
+    UI.hide('houseSettingsModal');
+    if (houseSettingsTarget !== null) {
+      ws.send(JSON.stringify({ type: 'scene_change', scene: 'interior_' + houseSettingsTarget, x: 200, y: 350 }));
+    }
+  });
+
+  window.tryEnterHouse = function(slot, owner) {
+    if (owner.bio) UI.toast(owner.bio, '');
+    ws.send(JSON.stringify({ type: 'scene_change', scene: 'interior_' + slot, x: 200, y: 350 }));
+  };
 
   // ------- Boot -------
   (async function init() {

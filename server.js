@@ -21,12 +21,22 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// ---- Analytics ----
+let serverStats = load('stats', { allTimeVisits: 0 });
+function recordVisit() {
+  serverStats.allTimeVisits++;
+  save('stats', serverStats);
+  broadcastStats();
+}
+function broadcastStats() {
+  broadcast({ type: 'stats', visitors: serverStats.allTimeVisits, online: clients.size });
+}
+
 // ---- Auth ----
 app.post('/api/register', async (req, res) => {
   try {
     const result = await auth.register(req.body);
-    world.assignHouse(result.username, loadAssignments());
-    saveAssignments(assignments);
+    recordVisit();
     res.json(result);
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -34,8 +44,7 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const result = await auth.login(req.body);
-    world.assignHouse(result.username, loadAssignments());
-    saveAssignments(assignments);
+    recordVisit();
     res.json(result);
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -58,6 +67,8 @@ app.get('/api/me', requireAuth, (req, res) => {
     equipped: user.equipped,
     avatar: user.avatar,
     houseName: user.houseName,
+    bio: user.bio || '',
+    allowedUsers: user.allowedUsers || [],
     houseSlot: assignments[user.username],
   });
 });
@@ -84,6 +95,38 @@ app.post('/api/me/house', requireAuth, (req, res) => {
   u.houseName = houseName.trim();
   auth.saveUsers(users);
   res.json({ houseName: u.houseName });
+});
+
+app.post('/api/house/settings', requireAuth, (req, res) => {
+  const { bio, keys } = req.body;
+  const users = auth.loadUsers();
+  const u = users[req.session.userKey];
+  if (bio !== undefined) u.bio = String(bio).slice(0, 100);
+  if (keys !== undefined) {
+    u.allowedUsers = String(keys).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  }
+  auth.saveUsers(users);
+  res.json({ bio: u.bio, allowedUsers: u.allowedUsers });
+});
+
+app.post('/api/land/buy', requireAuth, (req, res) => {
+  const { slot } = req.body;
+  if (!Number.isInteger(slot) || slot < 0 || slot >= world.HOUSES.length) return res.status(400).json({ error: 'Invalid plot' });
+  const users = auth.loadUsers();
+  const u = users[req.session.userKey];
+  
+  const takenSlots = Object.values(assignments);
+  if (takenSlots.includes(slot)) return res.status(400).json({ error: 'Plot already owned' });
+  if (assignments[u.username]) return res.status(400).json({ error: 'You already own land' });
+  
+  if (u.coins < 500) return res.status(400).json({ error: 'Not enough Xu (Need 500)' });
+  u.coins -= 500;
+  
+  assignments[u.username] = slot;
+  saveAssignments(assignments);
+  auth.saveUsers(users);
+  
+  res.json({ coins: u.coins, slot });
 });
 
 // ---- Shop ----
@@ -151,7 +194,7 @@ app.get('/api/world', requireAuth, (req, res) => {
   const houseOwners = {};
   for (const [uname, slot] of Object.entries(assignments)) {
     const u = users[uname.toLowerCase()];
-    if (u) houseOwners[slot] = { username: u.username, houseName: u.houseName };
+    if (u) houseOwners[slot] = { username: u.username, houseName: u.houseName, bio: u.bio || '' };
   }
   res.json({ world: world.WORLD, houses: world.HOUSES, landmarks: world.LANDMARKS, houseOwners });
 });
@@ -194,13 +237,14 @@ function playerSnapshot(meta) {
     username: meta.username,
     x: meta.x, y: meta.y, dir: meta.dir, moving: meta.moving,
     appearance: meta.appearance,
+    scene: meta.scene,
   };
 }
 
 function nearbyUsernames(meta, radius = 96) {
   const list = [];
   for (const other of clients.values()) {
-    if (other.username === meta.username) continue;
+    if (other.username === meta.username || other.scene !== meta.scene) continue;
     const dx = other.x - meta.x, dy = other.y - meta.y;
     if (dx*dx + dy*dy <= radius*radius) list.push(other.username);
   }
@@ -232,25 +276,57 @@ wss.on('connection', (ws) => {
           broadcast({ type: 'despawn', username: otherMeta.username });
         }
       }
-      const spawn = world.spawnPoint();
+      const uKey = session.user.username.toLowerCase();
+      const spawn = world.spawnPoint(assignments[uKey]);
       meta = {
         username: session.user.username,
         x: spawn.x, y: spawn.y, dir: 'down', moving: false,
+        scene: 'main',
         appearance: getAppearance(session.user.username),
         lastMove: Date.now(),
       };
       clients.set(ws, meta);
+      broadcastStats();
 
       ws.send(JSON.stringify({
         type: 'welcome',
         you: playerSnapshot(meta),
-        players: [...clients.values()].filter(m => m.username !== meta.username).map(playerSnapshot),
+        players: [...clients.values()].filter(m => m.username !== meta.username && m.scene === meta.scene).map(playerSnapshot),
       }));
-      broadcast({ type: 'spawn', player: playerSnapshot(meta) }, m => m.username !== meta.username);
+      broadcast({ type: 'spawn', player: playerSnapshot(meta) }, m => m.username !== meta.username && m.scene === meta.scene);
       return;
     }
 
     if (!meta) return;
+
+    if (msg.type === 'scene_change') {
+      const { scene, x, y } = msg;
+      
+      // Permissions check for interiors
+      if (scene !== 'main' && scene.startsWith('interior_')) {
+        const slot = parseInt(scene.split('_')[1], 10);
+        let ownerKey = Object.keys(assignments).find(k => assignments[k] === slot);
+        if (ownerKey && ownerKey !== meta.username.toLowerCase()) {
+          const owner = auth.loadUsers()[ownerKey];
+          const allowed = (owner.allowedUsers || []).map(s => s.toLowerCase());
+          if (!allowed.includes(meta.username.toLowerCase())) {
+             ws.send(JSON.stringify({ type: 'error', error: 'Locked! You don\'t have a key.' }));
+             return;
+          }
+        }
+      }
+      
+      // Broadcast despawn in old scene
+      broadcast({ type: 'despawn', username: meta.username }, m => m.username !== meta.username && m.scene === meta.scene);
+      
+      meta.scene = scene;
+      meta.x = x || meta.x; meta.y = y || meta.y;
+      meta.lastMove = Date.now();
+      
+      // Broadcast spawn in new scene
+      broadcast({ type: 'spawn', player: playerSnapshot(meta) }, m => m.username !== meta.username && m.scene === meta.scene);
+      return;
+    }
 
     if (msg.type === 'move') {
       const x = Math.max(16, Math.min(world.WORLD.width - 16, +msg.x || 0));
@@ -264,7 +340,7 @@ wss.on('connection', (ws) => {
       meta.moving = !!msg.moving;
       meta.lastMove = Date.now();
       broadcast({ type: 'pos', username: meta.username, x, y, dir: meta.dir, moving: meta.moving },
-        m => m.username !== meta.username);
+        m => m.username !== meta.username && m.scene === meta.scene);
       return;
     }
 
@@ -295,7 +371,8 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     if (meta) {
       clients.delete(ws);
-      broadcast({ type: 'despawn', username: meta.username });
+      broadcastStats();
+      broadcast({ type: 'despawn', username: meta.username }, m => m.scene === meta.scene);
     }
   });
 });
