@@ -117,12 +117,12 @@ app.post('/api/land/buy', requireAuth, (req, res) => {
   
   const takenSlots = Object.values(assignments);
   if (takenSlots.includes(slot)) return res.status(400).json({ error: 'Plot already owned' });
-  if (assignments[u.username]) return res.status(400).json({ error: 'You already own land' });
+  if (assignments[u.username.toLowerCase()]) return res.status(400).json({ error: 'You already own land' });
   
   if (u.coins < 500) return res.status(400).json({ error: 'Not enough Xu (Need 500)' });
   u.coins -= 500;
   
-  assignments[u.username] = slot;
+  assignments[u.username.toLowerCase()] = slot;
   saveAssignments(assignments);
   auth.saveUsers(users);
   
@@ -306,9 +306,9 @@ wss.on('connection', (ws) => {
       if (scene !== 'main' && scene.startsWith('interior_')) {
         const slot = parseInt(scene.split('_')[1], 10);
         let ownerKey = Object.keys(assignments).find(k => assignments[k] === slot);
-        if (ownerKey && ownerKey !== meta.username.toLowerCase()) {
-          const owner = auth.loadUsers()[ownerKey];
-          const allowed = (owner.allowedUsers || []).map(s => s.toLowerCase());
+        if (ownerKey && ownerKey.toLowerCase() !== meta.username.toLowerCase()) {
+          const owner = auth.loadUsers()[ownerKey.toLowerCase()];
+          const allowed = ((owner && owner.allowedUsers) || []).map(s => s.toLowerCase());
           if (!allowed.includes(meta.username.toLowerCase())) {
              ws.send(JSON.stringify({ type: 'error', error: 'Locked! You don\'t have a key.' }));
              return;
