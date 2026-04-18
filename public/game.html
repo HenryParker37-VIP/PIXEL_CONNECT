@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PixelConnect — World</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="game-body">
+  <canvas id="game" width="960" height="640"></canvas>
+
+  <div class="hud top-left">
+    <div class="hud-brand">PixelConnect</div>
+    <div class="hud-user"><span id="huName"></span></div>
+    <div class="hud-coins">🪙 <span id="huCoins">0</span> xu</div>
+  </div>
+
+  <div class="hud top-right">
+    <button class="hud-btn" id="btnShop">Shop</button>
+    <button class="hud-btn" id="btnFeed">Feed</button>
+    <button class="hud-btn" id="btnInv">Inventory</button>
+    <button class="hud-btn" id="btnLogout">Log out</button>
+  </div>
+
+  <div class="hud bottom-center hint" id="interactHint"></div>
+
+  <div class="toast-wrap" id="toasts"></div>
+
+  <!-- Chat panel -->
+  <div class="panel chat-panel hidden" id="chatPanel">
+    <div class="panel-head">
+      <span>Chat with <b id="chatWith"></b></span>
+      <button class="x" data-close="chatPanel">×</button>
+    </div>
+    <div class="chat-log" id="chatLog"></div>
+    <form id="chatForm" class="chat-form">
+      <input id="chatInput" maxlength="300" placeholder="Say hi...">
+      <button type="submit" class="btn primary small">Send</button>
+    </form>
+  </div>
+
+  <!-- Shop modal -->
+  <div class="modal hidden" id="shopModal">
+    <div class="modal-body">
+      <div class="modal-head">
+        <h2>Weekly Shop</h2>
+        <span class="sub">All items <b>50 xu</b> · Resets next week</span>
+        <button class="x" data-close="shopModal">×</button>
+      </div>
+      <div id="shopGrid" class="shop-grid"></div>
+    </div>
+  </div>
+
+  <!-- Feed modal -->
+  <div class="modal hidden" id="feedModal">
+    <div class="modal-body">
+      <div class="modal-head">
+        <h2 id="feedTitle">Community Board</h2>
+        <button class="x" data-close="feedModal">×</button>
+      </div>
+      <form id="postForm" class="post-form">
+        <textarea id="postContent" maxlength="500" placeholder="What's on your mind?"></textarea>
+        <div class="row">
+          <select id="postVisibility">
+            <option value="public">Public</option>
+            <option value="private">Private (to user)</option>
+          </select>
+          <input id="postAudience" placeholder="username (for private)" class="hidden">
+          <button type="submit" class="btn primary small">Post</button>
+        </div>
+      </form>
+      <div id="feedList" class="feed-list"></div>
+    </div>
+  </div>
+
+  <!-- Inventory modal -->
+  <div class="modal hidden" id="invModal">
+    <div class="modal-body">
+      <div class="modal-head">
+        <h2>Inventory</h2>
+        <button class="x" data-close="invModal">×</button>
+      </div>
+      <div id="invGrid" class="shop-grid"></div>
+    </div>
+  </div>
+
+  <script src="/js/sprites.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/net.js"></script>
+  <script src="/js/game.js"></script>
+</body>
+</html>

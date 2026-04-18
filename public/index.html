@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PixelConnect</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="auth-body">
+  <div class="auth-wrap">
+    <div class="brand">
+      <div class="logo">PC</div>
+      <h1>PixelConnect</h1>
+      <p class="tag">A pixel world with friends.</p>
+    </div>
+
+    <div class="card" id="authCard">
+      <div class="tabs">
+        <button class="tab active" data-tab="login">Log in</button>
+        <button class="tab" data-tab="register">Sign up</button>
+      </div>
+
+      <form id="loginForm" class="tabpanel active">
+        <label>Username or email</label>
+        <input id="loginId" required>
+        <label>Password</label>
+        <input id="loginPass" type="password">
+        <div class="or">— or use backup code —</div>
+        <label>Backup code (8 chars)</label>
+        <input id="loginCode" maxlength="8" placeholder="ABCD1234">
+        <button type="submit" class="btn primary">Log in</button>
+        <div class="err" id="loginErr"></div>
+      </form>
+
+      <form id="registerForm" class="tabpanel">
+        <label>Username</label>
+        <input id="regUser" required minlength="3" maxlength="20">
+        <label>Email</label>
+        <input id="regEmail" type="email" required>
+        <label>Password</label>
+        <input id="regPass" type="password" required minlength="6">
+        <button type="submit" class="btn primary">Create account</button>
+        <div class="err" id="regErr"></div>
+      </form>
+    </div>
+
+    <div class="card hidden" id="codeCard">
+      <h2>Save your backup code</h2>
+      <p>Write this down. You'll need it if you forget your password.</p>
+      <div class="code" id="backupCode"></div>
+      <p class="warn">This code is shown only once.</p>
+      <button class="btn primary" id="codeContinue">I saved it, continue</button>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+</body>
+</html>
