@@ -129,6 +129,26 @@ app.post('/api/land/buy', requireAuth, (req, res) => {
   res.json({ coins: u.coins, slot });
 });
 
+app.post('/api/house/enter', requireAuth, (req, res) => {
+  const { slot } = req.body;
+  if (!Number.isInteger(slot)) return res.status(400).json({ error: 'Invalid plot' });
+  
+  let ownerKey = Object.keys(assignments).find(k => assignments[k] === slot);
+  if (!ownerKey) return res.status(400).json({ error: 'House is vacant' });
+  
+  const users = auth.loadUsers();
+  if (ownerKey.toLowerCase() !== req.session.userKey) {
+    const owner = users[ownerKey.toLowerCase()];
+    const allowed = ((owner && owner.allowedUsers) || []).map(s => s.toLowerCase());
+    if (!allowed.includes(req.session.userKey)) {
+      return res.status(403).json({ error: "Locked! You don't have a key." });
+    }
+  }
+  
+  const owner = users[ownerKey.toLowerCase()];
+  res.json({ success: true, houseName: owner.houseName });
+});
+
 // ---- Shop ----
 app.get('/api/shop', requireAuth, (req, res) => {
   res.json(shop.getWeeklyShop());

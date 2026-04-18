@@ -118,29 +118,25 @@
       let nx = state.me.x + dx * speed * dt;
       let ny = state.me.y + dy * speed * dt;
 
-      if (state.me.scene !== 'main') {
-        nx = Math.max(50, Math.min(350, nx));
-        ny = Math.max(50, Math.min(350, ny));
-      } else {
-        // Collision with houses (bottom half only)
-        for (const h of state.world.houses) {
-          if (nx > h.x && nx < h.x + h.w && ny > h.y + 30 && ny < h.y + h.h) {
-            if (Math.abs(nx - h.x) < Math.abs(nx - (h.x + h.w))) nx = h.x - 1;
-            else nx = h.x + h.w + 1;
-          }
+      // Collision with houses (bottom half only)
+      for (const h of state.world.houses) {
+        if (nx > h.x && nx < h.x + h.w && ny > h.y + 30 && ny < h.y + h.h) {
+          if (Math.abs(nx - h.x) < Math.abs(nx - (h.x + h.w))) nx = h.x - 1;
+          else nx = h.x + h.w + 1;
         }
-        // Shop collision
-        for (const l of state.world.landmarks) {
-          if (l.type !== 'shop') continue;
-          if (nx > l.x && nx < l.x + l.w && ny > l.y && ny < l.y + l.h) {
-            if (Math.abs(nx - l.x) < Math.abs(nx - (l.x + l.w))) nx = l.x - 1;
-            else nx = l.x + l.w + 1;
-          }
-        }
-        // World bounds
-        nx = Math.max(16, Math.min(state.world.world.width - 16, nx));
-        ny = Math.max(16, Math.min(state.world.world.height - 16, ny));
       }
+      // Shop collision
+      for (const l of state.world.landmarks) {
+        if (l.type !== 'shop') continue;
+        if (nx > l.x && nx < l.x + l.w && ny > l.y && ny < l.y + l.h) {
+          if (Math.abs(nx - l.x) < Math.abs(nx - (l.x + l.w))) nx = l.x - 1;
+          else nx = l.x + l.w + 1;
+        }
+      }
+      // World bounds
+      nx = Math.max(16, Math.min(state.world.world.width - 16, nx));
+      ny = Math.max(16, Math.min(state.world.world.height - 16, ny));
+      
       state.me.x = nx; state.me.y = ny;
 
       if (Math.abs(dx) > Math.abs(dy)) state.me.dir = dx > 0 ? 'right' : 'left';
@@ -168,13 +164,8 @@
     }
 
     // Camera follow
-    if (state.me.scene !== 'main') {
-      state.camera.x = 200 - state.camera.w / 2;
-      state.camera.y = 200 - state.camera.h / 2;
-    } else {
-      state.camera.x = Math.max(0, Math.min(state.world.world.width - state.camera.w, state.me.x - state.camera.w / 2));
-      state.camera.y = Math.max(0, Math.min(state.world.world.height - state.camera.h, state.me.y - state.camera.h / 2));
-    }
+    state.camera.x = Math.max(0, Math.min(state.world.world.width - state.camera.w, state.me.x - state.camera.w / 2));
+    state.camera.y = Math.max(0, Math.min(state.world.world.height - state.camera.h, state.me.y - state.camera.h / 2));
 
     // Determine interactable target
     state.interactTarget = findInteractTarget();
@@ -200,10 +191,6 @@
     }
     if (nearest) return { kind: 'player', data: nearest, label: `chat with ${nearest.username}` };
 
-    if (state.me.scene !== 'main') {
-      if (state.me.y > 330) return { kind: 'door_exit', label: 'exit House' };
-      return null;
-    }
 
     for (const h of state.world.houses) {
       if (Math.abs(state.me.x - (h.x + h.w / 2)) < 80 && Math.abs(state.me.y - (h.y + h.h)) < 80) {
@@ -237,11 +224,7 @@
     else if (t.kind === 'shop') openShop();
     else if (t.kind === 'board') openFeed(t.data.label);
     else if (t.kind === 'plot') openBuyLand(t.data);
-    else if (t.kind === 'door_exit') {
-      const slot = parseInt(state.me.scene.split('_')[1], 10);
-      const h = state.world.houses[slot];
-      ws.send(JSON.stringify({ type: 'scene_change', scene: 'main', x: h.x + h.w/2, y: h.y + h.h + 20 }));
-    }
+
     else if (t.kind === 'house_door') {
       const owner = state.world.houseOwners[t.data.ownerSlot];
       if (owner.username === state.me.username) openHouseSettings(t.data.ownerSlot, owner);
@@ -262,21 +245,6 @@
       return;
     }
 
-    if (state.me.scene !== 'main') {
-      ctx.fillStyle = '#4a2f1d';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#392211';
-      ctx.fillRect(50 - state.camera.x, 50 - state.camera.y, 300, 340);
-      // Exit door
-      ctx.fillStyle = '#000';
-      ctx.fillRect(170 - state.camera.x, 370 - state.camera.y, 60, 20);
-      
-      const drawables = [];
-      for (const p of state.players.values()) drawables.push({ y: p.y, draw: () => drawPlayer(p, false) });
-      drawables.push({ y: state.me.y, draw: () => drawPlayer(state.me, true) });
-      drawables.sort((a, b) => a.y - b.y).forEach(d => d.draw());
-      return;
-    }
 
     Sprites.drawGrassTiles(ctx, state.camera, state.world.world);
 
@@ -581,14 +549,29 @@
   document.getElementById('btnEnterHouse').addEventListener('click', () => {
     UI.hide('houseSettingsModal');
     if (houseSettingsTarget !== null) {
-      ws.send(JSON.stringify({ type: 'scene_change', scene: 'interior_' + houseSettingsTarget, x: 200, y: 350 }));
+      triggerHouseEntry(houseSettingsTarget);
     }
   });
 
   window.tryEnterHouse = function(slot, owner) {
     if (owner.bio) UI.toast(owner.bio, '');
-    ws.send(JSON.stringify({ type: 'scene_change', scene: 'interior_' + slot, x: 200, y: 350 }));
+    triggerHouseEntry(slot);
   };
+
+  async function triggerHouseEntry(slot) {
+    try {
+      const res = await Net.api('/api/house/enter', { method: 'POST', body: JSON.stringify({ slot }) });
+      document.getElementById('interiorTitle').textContent = res.houseName || 'House Interior';
+      
+      const grid = document.getElementById('interiorGrid');
+      grid.innerHTML = '';
+      for (let i = 0; i < 24; i++) grid.appendChild(document.createElement('div'));
+      
+      UI.show('interiorModal');
+    } catch(e) {
+      UI.toast(e.message, 'danger');
+    }
+  }
 
   // ------- Boot -------
   (async function init() {
