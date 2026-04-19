@@ -1,25 +1,36 @@
 const { load, save } = require('./storage');
 
 const ITEM_POOL = [
-  { id: 'hair_brown', name: 'Brown Hair', slot: 'hair', color: '#3b2a20' },
-  { id: 'hair_blond', name: 'Blond Hair', slot: 'hair', color: '#e8c170' },
-  { id: 'hair_black', name: 'Black Hair', slot: 'hair', color: '#1a1a1a' },
-  { id: 'hair_red',   name: 'Red Hair',   slot: 'hair', color: '#b5432a' },
-  { id: 'hair_blue',  name: 'Blue Hair',  slot: 'hair', color: '#1877F2' },
-  { id: 'hair_pink',  name: 'Pink Hair',  slot: 'hair', color: '#ff77aa' },
-  { id: 'shirt_blue',   name: 'Blue Shirt',   slot: 'shirt', color: '#1877F2' },
-  { id: 'shirt_red',    name: 'Red Shirt',    slot: 'shirt', color: '#c0392b' },
-  { id: 'shirt_green',  name: 'Green Shirt',  slot: 'shirt', color: '#2ecc71' },
-  { id: 'shirt_yellow', name: 'Yellow Shirt', slot: 'shirt', color: '#f1c40f' },
-  { id: 'shirt_purple', name: 'Purple Shirt', slot: 'shirt', color: '#8e44ad' },
-  { id: 'shirt_white',  name: 'White Shirt',  slot: 'shirt', color: '#ffffff' },
-  { id: 'pants_gray',  name: 'Gray Pants',  slot: 'pants', color: '#5a6373' },
-  { id: 'pants_black', name: 'Black Pants', slot: 'pants', color: '#1a1a1a' },
-  { id: 'pants_brown', name: 'Brown Pants', slot: 'pants', color: '#6b4a2b' },
-  { id: 'pants_navy',  name: 'Navy Pants',  slot: 'pants', color: '#0c2b5a' },
-  { id: 'hat_cap',   name: 'Baseball Cap', slot: 'hat', color: '#1877F2' },
-  { id: 'hat_straw', name: 'Straw Hat',    slot: 'hat', color: '#d4a96a' },
-  { id: 'hat_wizard', name: 'Wizard Hat',  slot: 'hat', color: '#3b2a6a' },
+  // Apparel
+  { id: 'hair_brown', name: 'Brown Hair', slot: 'hair', category: 'apparel', color: '#3b2a20' },
+  { id: 'hair_blond', name: 'Blond Hair', slot: 'hair', category: 'apparel', color: '#e8c170' },
+  { id: 'hair_black', name: 'Black Hair', slot: 'hair', category: 'apparel', color: '#1a1a1a' },
+  { id: 'hair_red',   name: 'Red Hair',   slot: 'hair', category: 'apparel', color: '#b5432a' },
+  { id: 'hair_blue',  name: 'Blue Hair',  slot: 'hair', category: 'apparel', color: '#1877F2' },
+  { id: 'hair_pink',  name: 'Pink Hair',  slot: 'hair', category: 'apparel', color: '#ff77aa' },
+  { id: 'shirt_blue',   name: 'Blue Shirt',   slot: 'shirt', category: 'apparel', color: '#1877F2' },
+  { id: 'shirt_red',    name: 'Red Shirt',    slot: 'shirt', category: 'apparel', color: '#c0392b' },
+  { id: 'shirt_green',  name: 'Green Shirt',  slot: 'shirt', category: 'apparel', color: '#2ecc71' },
+  { id: 'shirt_yellow', name: 'Yellow Shirt', slot: 'shirt', category: 'apparel', color: '#f1c40f' },
+  { id: 'shirt_purple', name: 'Purple Shirt', slot: 'shirt', category: 'apparel', color: '#8e44ad' },
+  { id: 'shirt_white',  name: 'White Shirt',  slot: 'shirt', category: 'apparel', color: '#ffffff' },
+  { id: 'pants_gray',  name: 'Gray Pants',  slot: 'pants', category: 'apparel', color: '#5a6373' },
+  { id: 'pants_black', name: 'Black Pants', slot: 'pants', category: 'apparel', color: '#1a1a1a' },
+  { id: 'pants_brown', name: 'Brown Pants', slot: 'pants', category: 'apparel', color: '#6b4a2b' },
+  { id: 'pants_navy',  name: 'Navy Pants',  slot: 'pants', category: 'apparel', color: '#0c2b5a' },
+  { id: 'hat_cap',   name: 'Baseball Cap', slot: 'hat', category: 'apparel', color: '#1877F2' },
+  { id: 'hat_straw', name: 'Straw Hat',    slot: 'hat', category: 'apparel', color: '#d4a96a' },
+  { id: 'hat_wizard', name: 'Wizard Hat',  slot: 'hat', category: 'apparel', color: '#3b2a6a' },
+  
+  // Consumables (Hunger/Thirst)
+  { id: 'food_burger', name: 'Burger', category: 'food', value: 30, color: '#f1c40f' },
+  { id: 'food_apple', name: 'Apple', category: 'food', value: 15, color: '#e74c3c' },
+  { id: 'drink_water', name: 'Water', category: 'drink', value: 25, color: '#3498db' },
+  { id: 'drink_cola', name: 'Cola', category: 'drink', value: 10, color: '#1a1a1a' },
+  
+  // Furniture (Energy)
+  { id: 'furniture_bed', name: 'Wooden Bed', category: 'furniture', color: '#8B4513' },
+  { id: 'furniture_table', name: 'Table', category: 'furniture', color: '#5C4033' },
 ];
 const ITEM_PRICE = 10;
 

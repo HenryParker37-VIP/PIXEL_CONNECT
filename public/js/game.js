@@ -67,6 +67,8 @@
     } else if (msg.type === 'stats') {
       document.getElementById('statVisits').textContent = msg.visitors;
       document.getElementById('statOnline').textContent = msg.online;
+    } else if (msg.type === 'sync_stats') {
+      window.updateStats(msg);
     } else if (msg.type === 'chatError') {
       UI.toast(msg.error, 'danger');
     } else if (msg.type === 'pong') {
@@ -212,18 +214,32 @@
         if (Math.abs(state.me.x - (l.x + l.w / 2)) < 60 && Math.abs(state.me.y - (l.y + l.h / 2)) < 60) {
           return { kind: 'board', data: l, label: `open ${l.label}` };
         }
+      } else if (l.type === 'job') {
+        if (Math.abs(state.me.x - (l.x + l.w / 2)) < 80 && Math.abs(state.me.y - (l.y + l.h / 2)) < 80) {
+          return { kind: 'job', data: l, label: `Work Shift (+Xu)` };
+        }
       }
     }
     return null;
   }
 
-  function tryInteract() {
+  async function tryInteract() {
     const t = state.interactTarget;
     if (!t) return;
     if (t.kind === 'player') openChat(t.data.username);
     else if (t.kind === 'shop') openShop();
     else if (t.kind === 'board') openFeed(t.data.label);
     else if (t.kind === 'plot') openBuyLand(t.data);
+    else if (t.kind === 'job') {
+      try {
+        const r = await Net.api('/api/me/work', { method: 'POST' });
+        document.getElementById('huCoins').textContent = r.coins;
+        window.updateStats(r);
+        UI.toast('You worked a shift and earned 50 Xu!', 'success');
+      } catch (e) {
+        UI.toast(e.message, 'danger');
+      }
+    }
 
     else if (t.kind === 'house_door') {
       const owner = state.world.houseOwners[t.data.ownerSlot];
@@ -269,6 +285,16 @@
       drawables.push({ y: l.y + l.h, draw: () => {
         const ll = { ...l, x: l.x - state.camera.x, y: l.y - state.camera.y };
         if (l.type === 'shop') Sprites.drawShopBuilding(ctx, ll);
+        else if (l.type === 'job') {
+          ctx.fillStyle = '#34495e';
+          ctx.fillRect(ll.x, ll.y, ll.w, ll.h);
+          ctx.fillStyle = '#ecf0f1';
+          ctx.fillRect(ll.x + 10, ll.y + 10, ll.w - 20, 20);
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(ll.label, ll.x + ll.w/2, ll.y - 10);
+        }
         else Sprites.drawBoard(ctx, ll);
       }});
     }
@@ -404,14 +430,27 @@
           card.appendChild(name);
           const label = document.createElement('div');
           label.className = 'p';
-          label.textContent = equipped ? 'Equipped' : 'Click to equip';
+          let actionText = 'Click to equip';
+          if (id.startsWith('food') || id.startsWith('drink')) actionText = 'Consume';
+          else if (id.startsWith('furniture')) actionText = 'Place inside House';
+          
+          label.textContent = equipped ? 'Equipped' : actionText;
           card.appendChild(label);
           if (!equipped) {
             card.addEventListener('click', async () => {
               try {
-                await Net.api('/api/me/equip', { method: 'POST', body: JSON.stringify({ itemId: id }) });
-                UI.toast(`Equipped ${Sprites.ITEM_NAMES[id] || id}`, 'success');
-                openInventory();
+                if (id.startsWith('food') || id.startsWith('drink')) {
+                  const r = await Net.api('/api/me/consume', { method: 'POST', body: JSON.stringify({ itemId: id }) });
+                  window.updateStats(r);
+                  UI.toast(`Consumed ${Sprites.ITEM_NAMES[id] || id}`, 'success');
+                  openInventory();
+                } else if (id.startsWith('furniture')) {
+                  UI.toast('Open your House layout to place furniture!', 'warn');
+                } else {
+                  await Net.api('/api/me/equip', { method: 'POST', body: JSON.stringify({ itemId: id }) });
+                  UI.toast(`Equipped ${Sprites.ITEM_NAMES[id] || id}`, 'success');
+                  openInventory();
+                }
               } catch (e) { UI.toast(e.message, 'danger'); }
             });
           }
@@ -565,13 +604,54 @@
       
       const grid = document.getElementById('interiorGrid');
       grid.innerHTML = '';
-      for (let i = 0; i < 24; i++) grid.appendChild(document.createElement('div'));
+      for (let i = 0; i < 24; i++) {
+        const cell = document.createElement('div');
+        const f = (res.furniture || []).find(x => x.cellIdx === i);
+        if (f) {
+           cell.innerHTML = `<div style="text-align:center;">🪴<br><span style="font-size:10px">${f.itemId.replace('furniture_','')}</span></div>`;
+           cell.style.display = 'flex';
+           cell.style.alignItems='center';
+           cell.style.justifyContent='center';
+           cell.style.cursor='pointer';
+           cell.onclick = async () => {
+             if (f.itemId.includes('bed')) {
+               const rep = await Net.api('/api/me/sleep', { method: 'POST' });
+               window.updateStats(rep);
+               UI.toast('You slept in your bed and recovered full energy!', 'success');
+             } else {
+               await Net.api('/api/house/furniture', { method: 'POST', body: JSON.stringify({ cellIdx: i }) });
+               UI.toast('Picked up!', 'success');
+               triggerHouseEntry(slot); 
+             }
+           };
+        } else {
+           cell.onclick = async () => {
+             const invReq = await Net.api('/api/me/profile');
+             const furns = invReq.inventory.filter(x => x.startsWith('furniture_'));
+             if (furns.length) {
+               await Net.api('/api/house/furniture', { method: 'POST', body: JSON.stringify({ itemId: furns[0], cellIdx: i }) });
+               triggerHouseEntry(slot);
+             } else {
+               UI.toast('You have no furniture in your inventory to place!', 'warn');
+             }
+           };
+        }
+        grid.appendChild(cell);
+      }
       
       UI.show('interiorModal');
     } catch(e) {
       UI.toast(e.message, 'danger');
     }
   }
+
+  window.updateStats = function(s) {
+    if (s.hunger !== undefined) {
+      document.getElementById('barHunger').style.width = Math.max(0, s.hunger) + '%';
+      document.getElementById('barThirst').style.width = Math.max(0, s.thirst) + '%';
+      document.getElementById('barEnergy').style.width = Math.max(0, s.energy) + '%';
+    }
+  };
 
   // ------- Boot -------
   (async function init() {

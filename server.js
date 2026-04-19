@@ -70,6 +70,8 @@ app.get('/api/me', requireAuth, (req, res) => {
     bio: user.bio || '',
     allowedUsers: user.allowedUsers || [],
     houseSlot: assignments[user.username],
+    hunger: user.hunger, thirst: user.thirst, energy: user.energy,
+    furniture: user.furniture || []
   });
 });
 
@@ -85,6 +87,45 @@ app.post('/api/me/equip', requireAuth, (req, res) => {
   auth.saveUsers(users);
   broadcastAppearance(u.username);
   res.json({ equipped: u.equipped });
+});
+
+app.post('/api/me/consume', requireAuth, (req, res) => {
+  const { itemId } = req.body;
+  const users = auth.loadUsers();
+  const u = users[req.session.userKey];
+  const item = shop.getItemById(itemId);
+  if (!item || !['food', 'drink'].includes(item.category)) return res.status(400).json({ error: 'Not consumable' });
+  const idx = u.inventory.indexOf(itemId);
+  if (idx === -1) return res.status(400).json({ error: 'Item not owned' });
+  
+  u.inventory.splice(idx, 1);
+  if (item.category === 'food') u.hunger = Math.min(100, (u.hunger || 100) + item.value);
+  if (item.category === 'drink') u.thirst = Math.min(100, (u.thirst || 100) + item.value);
+  
+  auth.saveUsers(users);
+  res.json({ hunger: u.hunger, thirst: u.thirst, inventory: u.inventory });
+});
+
+app.post('/api/me/work', requireAuth, (req, res) => {
+  const users = auth.loadUsers();
+  const u = users[req.session.userKey];
+  if ((u.hunger||100) < 10 || (u.thirst||100) < 10 || (u.energy||100) < 20) {
+    return res.status(400).json({ error: 'Too exhausted or hungry to work! Eat or sleep.' });
+  }
+  u.hunger -= 10;
+  u.thirst -= 10;
+  u.energy -= 20;
+  u.coins += 50;
+  auth.saveUsers(users);
+  res.json({ coins: u.coins, hunger: u.hunger, thirst: u.thirst, energy: u.energy });
+});
+
+app.post('/api/me/sleep', requireAuth, (req, res) => {
+  const users = auth.loadUsers();
+  const u = users[req.session.userKey];
+  u.energy = 100;
+  auth.saveUsers(users);
+  res.json({ energy: u.energy });
 });
 
 app.post('/api/me/house', requireAuth, (req, res) => {
@@ -146,7 +187,33 @@ app.post('/api/house/enter', requireAuth, (req, res) => {
   }
   
   const owner = users[ownerKey.toLowerCase()];
-  res.json({ success: true, houseName: owner.houseName });
+  res.json({ success: true, houseName: owner.houseName, ownerKey: ownerKey.toLowerCase(), furniture: owner.furniture || [] });
+});
+
+app.post('/api/house/furniture', requireAuth, (req, res) => {
+  const { itemId, cellIdx } = req.body;
+  const users = auth.loadUsers();
+  const u = users[req.session.userKey];
+  if (!u.furniture) u.furniture = [];
+  
+  if (itemId) {
+    const item = shop.getItemById(itemId);
+    if (!item || item.category !== 'furniture') return res.status(400).json({ error: 'Not furniture' });
+    const idx = u.inventory.indexOf(itemId);
+    if (idx === -1) return res.status(400).json({ error: 'Item not owned' });
+    
+    u.inventory.splice(idx, 1);
+    u.furniture.push({ itemId, cellIdx });
+  } else {
+    const fIdx = u.furniture.findIndex(f => f.cellIdx === cellIdx);
+    if (fIdx !== -1) {
+      const removed = u.furniture.splice(fIdx, 1)[0];
+      u.inventory.push(removed.itemId);
+    }
+  }
+  
+  auth.saveUsers(users);
+  res.json({ furniture: u.furniture, inventory: u.inventory });
 });
 
 // ---- Shop ----
@@ -396,6 +463,26 @@ wss.on('connection', (ws) => {
     }
   });
 });
+
+setInterval(() => {
+  const users = auth.loadUsers();
+  let changed = false;
+  for (const [ws, meta] of clients.entries()) {
+    const uKey = meta.username.toLowerCase();
+    const u = users[uKey];
+    if (u) {
+      if (u.hunger === undefined) { u.hunger=100; u.thirst=100; u.energy=100; }
+      u.hunger = Math.max(0, u.hunger - 1);
+      u.thirst = Math.max(0, u.thirst - 1);
+      u.energy = Math.max(0, u.energy - 1);
+      changed = true;
+      if (ws.readyState === 1) {
+        ws.send(JSON.stringify({ type: 'sync_stats', hunger: u.hunger, thirst: u.thirst, energy: u.energy }));
+      }
+    }
+  }
+  if (changed) auth.saveUsers(users);
+}, 10000);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

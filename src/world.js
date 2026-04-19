@@ -43,6 +43,7 @@ const LANDMARKS = [
   { type: 'shop', x: 1550, y: 2000, w: 96, h: 96, label: 'SHOP' },
   { type: 'board', x: 1400, y: 2040, w: 64, h: 48, label: 'Community Board' },
   { type: 'board', x: 1700, y: 2040, w: 64, h: 48, label: 'Events Board' },
+  { type: 'job', x: 1850, y: 2040, w: 64, h: 48, label: 'Job Center' },
 ];
 
 function spawnPoint(houseSlot) {

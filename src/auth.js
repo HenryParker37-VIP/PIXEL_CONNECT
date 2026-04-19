@@ -50,6 +50,8 @@ async function register({ username, email, password }) {
     equipped: { hair: 'hair_brown', shirt: 'shirt_blue', pants: 'pants_gray' },
     avatar: { skin: '#f2c99b', hairColor: '#3b2a20' },
     houseName: `${username}'s House`,
+    hunger: 100, thirst: 100, energy: 100,
+    furniture: [],
     lastDaily: null,
     createdAt: Date.now(),
   };
