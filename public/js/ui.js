@@ -1,9 +1,12 @@
 (function () {
-  function toast(msg, kind = '') {
+  function toast(msg, kind = '', iconName = '') {
     const wrap = document.getElementById('toasts');
     const el = document.createElement('div');
     el.className = 'toast ' + kind;
-    el.textContent = msg;
+    if (iconName && window.PixelIcons) el.appendChild(window.PixelIcons.create(iconName, { size: 32, className: 'toast-icon' }));
+    const text = document.createElement('span');
+    text.textContent = msg;
+    el.appendChild(text);
     wrap.appendChild(el);
     setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .4s'; }, 3000);
     setTimeout(() => el.remove(), 3500);

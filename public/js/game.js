@@ -339,7 +339,7 @@
     const other = msg.from === state.me.username ? msg.to : msg.from;
     if (state.activeChat !== other) {
       if (msg.from !== state.me.username) {
-        UI.toast(`💬 ${msg.from}: ${msg.text.slice(0, 40)}`, '');
+        UI.toast(`${msg.from}: ${msg.text.slice(0, 40)}`, '', 'chat-connect');
       }
       return;
     }
@@ -483,13 +483,15 @@
         const time = new Date(p.createdAt).toLocaleString();
         const visLabel = p.visibility === 'private' ? ' · Private' : '';
         const liked = p.likes.includes(meName);
+        const likeIcon = PixelIcons.markup('like', 32, '', 'ui-icon act-icon');
+        const commentIcon = PixelIcons.markup('chat-connect', 32, '', 'ui-icon act-icon');
         el.innerHTML = `
           <div class="author">${escapeHtml(p.author)}</div>
           <div class="meta">${time}${visLabel}</div>
           <div class="body">${escapeHtml(p.content)}</div>
           <div class="actions">
-            <span class="act like ${liked ? 'liked' : ''}">👍 ${p.likes.length} Like</span>
-            <span class="act comment-toggle">💬 ${p.comments.length} Comment</span>
+            <button type="button" class="act like ${liked ? 'liked' : ''}" aria-label="Like post">${likeIcon}<span>${p.likes.length} Like</span></button>
+            <button type="button" class="act comment-toggle" aria-label="Show comments">${commentIcon}<span>${p.comments.length} Comment</span></button>
           </div>
           <div class="comments hidden">
             ${p.comments.map(c => `<div class="comment"><b>${escapeHtml(c.author)}</b>: ${escapeHtml(c.text)}</div>`).join('')}
@@ -608,7 +610,7 @@
         const cell = document.createElement('div');
         const f = (res.furniture || []).find(x => x.cellIdx === i);
         if (f) {
-           cell.innerHTML = `<div style="text-align:center;">🪴<br><span style="font-size:10px">${f.itemId.replace('furniture_','')}</span></div>`;
+           cell.innerHTML = `<div class="furniture-preview">${PixelIcons.markup('furniture-sprout', 32)}<span style="font-size:10px">${f.itemId.replace('furniture_','')}</span></div>`;
            cell.style.display = 'flex';
            cell.style.alignItems='center';
            cell.style.justifyContent='center';

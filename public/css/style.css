@@ -23,6 +23,9 @@ body { background: var(--fb-bg); }
 .brand .tag { font-size: 22px; color: var(--fb-muted); margin: 0; }
 .brand .guide { background: #fff; padding: 16px 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.05); border: 1px solid var(--fb-border); }
 .brand .guide li { padding: 4px 0; font-size: 15px; color: var(--fb-text); }
+.guide-item { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+.guide-item .ui-icon { width: 32px; height: 32px; flex: 0 0 32px; }
+.ui-icon { display: inline-block; object-fit: contain; vertical-align: middle; }
 
 .card { background: var(--fb-card); border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
 .card h2 { margin: 0 0 12px; }
@@ -61,7 +64,8 @@ body { background: var(--fb-bg); }
 .hud-brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; letter-spacing: .5px; }
 .hud-brand img { display: block; width: 28px; height: 28px; object-fit: contain; border-radius: 6px; }
 .hud-user { opacity: .95; }
-.hud-coins { background: rgba(255,255,255,.22); padding: 2px 10px; border-radius: 999px; font-weight: 700; }
+.hud-coins { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.22); padding: 2px 10px; border-radius: 999px; font-weight: 700; }
+.hud-coins .ui-icon { width: 20px; height: 20px; flex: 0 0 20px; }
 
 .hud.top-right { top: 12px; right: 16px; display: flex; gap: 6px; text-shadow: none; }
 .hud-btn { padding: 8px 14px; border: none; border-radius: 6px; background: #ffffffdd; color: var(--fb-text); font-weight: 600; cursor: pointer; font-size: 13px; }
@@ -77,7 +81,8 @@ body { background: var(--fb-bg); }
 
 /* Toasts */
 .toast-wrap { position: fixed; top: 60px; right: 16px; z-index: 20; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-.toast { background: #fff; border-left: 4px solid var(--fb-blue); padding: 10px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.15); min-width: 220px; font-size: 14px; animation: slide .25s ease; }
+.toast { display: flex; align-items: center; gap: 8px; background: #fff; border-left: 4px solid var(--fb-blue); padding: 10px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.15); min-width: 220px; font-size: 14px; animation: slide .25s ease; }
+.toast-icon { width: 24px; height: 24px; flex: 0 0 24px; }
 .toast.success { border-left-color: var(--success); }
 .toast.warn { border-left-color: var(--warn); }
 .toast.danger { border-left-color: var(--danger); }
@@ -123,8 +128,11 @@ body { background: var(--fb-bg); }
 .post .author { font-weight: 700; font-size: 14px; color: var(--fb-blue); }
 .post .meta { font-size: 11px; color: var(--fb-muted); }
 .post .body { margin: 8px 0; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; }
-.post .actions { display: flex; gap: 12px; font-size: 13px; }
-.post .act { cursor: pointer; color: var(--fb-muted); user-select: none; }
+.post .actions { display: flex; gap: 8px; font-size: 13px; }
+.post .act { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--fb-muted); user-select: none; padding: 4px 6px; border: 0; border-radius: 6px; background: transparent; font: inherit; }
+.post .act:hover { background: #e4e6eb; }
+.post .act:focus-visible { outline: 2px solid var(--fb-blue); outline-offset: 2px; }
+.post .act-icon { width: 18px; height: 18px; flex: 0 0 18px; }
 .post .act.liked { color: var(--fb-blue); font-weight: 600; }
 .post .comments { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--fb-border); }
 .post .comment { font-size: 13px; padding: 4px 0; }
@@ -153,3 +161,5 @@ body { background: var(--fb-bg); }
   border: 1px dashed rgba(0,0,0,0.1);
   border-radius: 2px;
 }
+.furniture-preview { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.furniture-preview .ui-icon { width: 32px; height: 32px; }
