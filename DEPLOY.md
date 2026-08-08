@@ -34,7 +34,7 @@ Click **Create Web Service**. Render will build + deploy (takes 2–5 min).
 
 Once live, you'll get a URL like:
 ```
-https://pixelconnect.onrender.com
+https://pixel-connect.onrender.com
 ```
 That's your public game!
 
@@ -44,8 +44,8 @@ That's your public game!
 
 PixelConnect stays on Render's Free instance. Free web services can sleep after 15 minutes without inbound traffic, so use an external UptimeRobot monitor following the same pattern as Pastel Chat:
 
-1. Create an UptimeRobot **HTTP(s)** monitor with this URL: `https://pixelconnect.onrender.com/health`
-2. Set the interval to **Every 10 minutes**.
+1. Create an UptimeRobot **HTTP(s)** monitor with this URL: `https://pixel-connect.onrender.com/health`
+2. On UptimeRobot's Free plan, set the interval to **Every 5 minutes** (10 minutes is not an available Free interval).
 3. **Filesystem is ephemeral** — every deploy or restart wipes `data/*.json`.
    Users, posts, and purchases will be lost. For persistence, upgrade to a paid plan
    with a persistent disk, or migrate storage to a database (Render PostgreSQL free tier works).
