@@ -24,9 +24,10 @@ Render will auto-detect `render.yaml` in the repo. If not, fill in manually:
 | Region            | (closest to you)     |
 | Branch            | `claude/pixelconnect-game-setup-HDuoU` (or merge to `main` first) |
 | Runtime           | `Node`               |
-| Build Command     | `npm install`        |
+| Build Command     | `npm ci`             |
 | Start Command     | `npm start`          |
 | Instance Type     | `Free`               |
+| Health Check Path | `/health`            |
 
 ### 4. Deploy
 Click **Create Web Service**. Render will build + deploy (takes 2–5 min).
@@ -39,18 +40,17 @@ That's your public game!
 
 ---
 
-## Free tier limitations (important!)
+## Free-tier keep-awake monitoring (important!)
 
-Render's free plan has a few caveats that affect this app:
+PixelConnect stays on Render's Free instance. Free web services can sleep after 15 minutes without inbound traffic, so use an external UptimeRobot monitor following the same pattern as Pastel Chat:
 
-1. **Filesystem is ephemeral** — every deploy or restart wipes `data/*.json`.
+1. Create an UptimeRobot **HTTP(s)** monitor with this URL: `https://pixelconnect.onrender.com/health`
+2. Set the interval to **Every 10 minutes**.
+3. **Filesystem is ephemeral** — every deploy or restart wipes `data/*.json`.
    Users, posts, and purchases will be lost. For persistence, upgrade to a paid plan
    with a persistent disk, or migrate storage to a database (Render PostgreSQL free tier works).
 
-2. **Service spins down after 15 min idle** — first request after idle
-   takes ~30s to cold-start.
-
-3. **750 free hours/month per workspace.**
+The monitor is an external request from a third-party service, not a self-ping from PixelConnect. It can reduce cold starts but cannot guarantee 24/7 availability or prevent all Render restarts.
 
 ## Upgrading to persistent storage
 

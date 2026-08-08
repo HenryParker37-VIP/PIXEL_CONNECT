@@ -13,6 +13,14 @@ const app = express();
 app.use(express.json({ limit: '64kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Render health checks must be fast, read-only, and independent of user data.
+function healthCheck(_req, res) {
+  res.set('Cache-Control', 'no-store');
+  res.status(200).json({ status: 'ok' });
+}
+app.get('/health', healthCheck);
+app.get('/healthz', healthCheck);
+
 function requireAuth(req, res, next) {
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const session = auth.verifyToken(token);
@@ -485,6 +493,6 @@ setInterval(() => {
 }, 10000);
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`PixelConnect listening on http://localhost:${PORT}`);
 });
