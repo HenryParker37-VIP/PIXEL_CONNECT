@@ -4,13 +4,39 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>PixelConnect — World</title>
+  <meta name="description" content="A pixel world with friends.">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="/manifest.webmanifest?v=brand-20260809">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16.png?v=brand-20260809">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png?v=brand-20260809">
+  <link rel="icon" type="image/png" sizes="48x48" href="/assets/icons/favicon-48.png?v=brand-20260809">
+  <link rel="shortcut icon" href="/assets/icons/favicon.ico?v=brand-20260809">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png?v=brand-20260809">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pixel-connect.onrender.com/game.html">
+  <meta property="og:title" content="PixelConnect — World">
+  <meta property="og:description" content="A pixel world with friends.">
+  <meta property="og:image" content="https://pixel-connect.onrender.com/assets/og-image.png?v=brand-20260809">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PixelConnect logo">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PixelConnect — World">
+  <meta name="twitter:description" content="A pixel world with friends.">
+  <meta name="twitter:image" content="https://pixel-connect.onrender.com/assets/og-image.png?v=brand-20260809">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="game-body">
+  <div class="app-splash" id="appSplash" role="status" aria-live="polite">
+    <img src="/assets/icons/icon-192.png?v=brand-20260809" width="192" height="192" alt="PixelConnect logo">
+    <span>Loading world…</span>
+  </div>
   <canvas id="game" width="960" height="640"></canvas>
 
   <div class="hud top-left">
-    <div class="hud-brand">PixelConnect</div>
+    <div class="hud-brand"><img src="/assets/icons/icon-48.png?v=brand-20260809" width="28" height="28" alt=""><span>PixelConnect</span></div>
     <div class="hud-user"><span id="huName"></span></div>
     <div class="hud-coins">🪙 <span id="huCoins">0</span> xu</div>
     <div class="hud-stats">Visitors: <b id="statVisits">0</b> | Online: <b id="statOnline">0</b></div>

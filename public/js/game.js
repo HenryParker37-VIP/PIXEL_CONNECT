@@ -661,6 +661,7 @@
       document.getElementById('huName').textContent = me.username;
       document.getElementById('huCoins').textContent = me.coins;
       openSocket();
+      document.getElementById('appSplash')?.classList.add('hidden');
       requestAnimationFrame(loop);
     } catch (e) {
       UI.toast(e.message, 'danger');
